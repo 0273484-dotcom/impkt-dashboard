@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMPKT — Panel Médico</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0A0A;color:#F5F5F3;font-family:system-ui,sans-serif;font-size:13px;padding:12px;min-height:100vh}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#111110;border:0.5px solid #1D9E75;border-radius:12px;padding:24px;max-width:480px;width:90%;position:relative}
+.modal-title{font-size:15px;font-weight:600;color:#F5F5F3;margin-bottom:12px}
+.modal-body{font-size:12px;color:#888780;line-height:1.7}
+.modal-body strong{color:#F5F5F3}
+.modal-body ul{padding-left:16px;margin-top:8px}
+.modal-body li{margin-bottom:6px}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:#5F5E5A;font-size:18px;cursor:pointer}
+.modal-close:hover{color:#F5F5F3}
+.header{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid #1D9E75;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.brand{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.brand-k{color:#00C896}
+.live-row{display:flex;align-items:center;gap:8px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#00C896;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.badge{background:#04342C;color:#00C896;font-size:10px;padding:2px 8px;border-radius:10px}
+.sub{font-size:11px;color:#5F5E5A}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:600px){.metrics{grid-template-columns:repeat(3,1fr)}}
+.metric{background:#111110;border-radius:8px;padding:10px 12px;border:0.5px solid #1a1a18}
+.metric-val{font-size:24px;font-weight:600;margin-bottom:2px}
+.metric-label{font-size:10px;color:#5F5E5A;text-transform:uppercase;letter-spacing:.05em}
+.grid-main{display:grid;grid-template-columns:1fr 300px;gap:10px;margin-bottom:10px}
+@media(max-width:700px){.grid-main{grid-template-columns:1fr}}
+.grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.grid-bottom{grid-template-columns:1fr}}
+.card{background:#111110;border-radius:8px;border:0.5px solid #1a1a18;padding:12px}
+.card-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#5F5E5A;margin-bottom:10px}
+.alert-card{background:#0D0303;border:1px solid #D91E18;border-radius:8px;padding:12px;margin-bottom:12px;animation:alertpulse 2s infinite}
+@keyframes alertpulse{0%,100%{border-color:#D91E18}50%{border-color:#7a0f0f}}
+.alert-title{color:#D91E18;font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.alert-body{color:#A32D2D;font-size:11px;line-height:1.5}
+.alert-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.btn-crit{background:#D91E18;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:500}
+.btn-ghost{background:transparent;color:#D91E18;border:1px solid #D91E18;padding:6px 14px;border-radius:5px;font-size:11px;cursor:pointer}
+.player-row{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:6px;cursor:pointer;border:0.5px solid transparent;transition:all .15s;margin-bottom:4px}
+.player-row:hover{background:#161616;border-color:#2C2C2A}
+.player-row.crit{background:#0D0303;border-color:#D91E18}
+.player-row.warn{background:#0D0900;border-color:#F5A800}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-g{background:#00C896}.dot-y{background:#F5A800}.dot-r{background:#D91E18;animation:pulse 1s infinite}
+.p-num{font-size:12px;font-weight:600;min-width:28px;color:#F5F5F3}
+.p-name{font-size:12px;min-width:100px;color:#F5F5F3}
+.p-pos{font-size:10px;color:#5F5E5A;min-width:22px}
+.bar-t{flex:1;height:4px;background:#1a1a18;border-radius:2px;overflow:hidden}
+.bar-f{height:100%;border-radius:2px;transition:width .6s}
+.p-imp{font-size:11px;color:#5F5E5A;min-width:40px;text-align:right}
+.p-g{font-size:11px;min-width:32px;text-align:right}
+.p-tag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500;min-width:46px;text-align:center}
+.t-ok{background:#04342C;color:#00C896}.t-w{background:#412402;color:#F5A800}.t-c{background:#500A0A;color:#D91E18}
+.thresh-row{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.thresh{display:flex;align-items:center;gap:4px;font-size:10px;color:#5F5E5A}
+.chart-bar-container{display:flex;flex-direction:column;gap:6px}
+.chart-row{display:flex;align-items:center;gap:8px}
+.chart-label{font-size:11px;color:#888780;min-width:60px;text-align:right}
+.chart-track{flex:1;height:18px;background:#1a1a18;border-radius:3px;overflow:hidden}
+.chart-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:6px;font-size:10px;font-weight:500}
+.chart-val{font-size:11px;color:#5F5E5A;min-width:30px;text-align:right}
+.timeline{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.tl-item{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:#0a0a09;border-radius:5px;border-left:2px solid #2C2C2A}
+.tl-item.crit{border-left-color:#D91E18}.tl-item.warn{border-left-color:#F5A800}
+.tl-time{font-size:10px;color:#5F5E5A;min-width:36px;font-family:monospace}
+.tl-text{font-size:11px;color:#888780;line-height:1.4}
+.position-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pos-card{background:#0a0a09;border-radius:6px;padding:8px;border:0.5px solid #1a1a18;text-align:center;cursor:pointer}
+.pos-card:hover{border-color:#2C2C2A}
+.pos-name{font-size:10px;color:#5F5E5A;margin-bottom:4px}
+.pos-avg{font-size:16px;font-weight:600}
+.action-btn{width:100%;text-align:left;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;border:0.5px solid;margin-bottom:7px;transition:opacity .15s}
+.action-btn:hover{opacity:.8}
+.footer{margin-top:14px;padding-top:10px;border-top:0.5px solid #1a1a18;text-align:center;font-size:10px;color:#333}
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('active')">✕</button>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="header">
+  <div>
+    <div class="brand">IMP<span class="brand-k">K</span>T <span style="font-size:13px;color:#5F5E5A;font-weight:400">· Panel médico en tiempo real</span></div>
+    <div class="sub" style="margin-top:3px">Temporada Primavera 2026 · Q3 — <span id="timer">08:22</span> · Partido vs Pumas UP</div>
+  </div>
+  <div class="live-row">
+    <div class="live-dot"></div>
+    <span class="badge">EN VIVO</span>
+    <span class="sub">11 sensores activos · BLE Mesh</span>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="metric-val" style="color:#F5F5F3" id="total-imp">247</div><div class="metric-label">impactos totales</div></div>
+  <div class="metric"><div class="metric-val" style="color:#F5A800">2</div><div class="metric-label">en alerta</div></div>
+  <div class="metric"><div class="metric-val" style="color:#D91E18">1</div><div class="metric-label">crítico activo</div></div>
+  <div class="metric"><div class="metric-val" style="color:#00C896">9.4g</div><div class="metric-label">pico máximo</div></div>
+  <div class="metric"><div class="metric-val" style="color:#F5F5F3"><span id="latency">1.2</span>s</div><div class="metric-label">latencia BLE</div></div>
+</div>
+
+<div class="alert-card">
+  <div class="alert-title"><div class="dot dot-r"></div>ALERTA CRÍTICA — #72 R. Mendoza · LB</div>
+  <div class="alert-body">Impacto rotacional de 9.4g · 412°/s registrado hace <span id="ago">31</span> seg. Acumulación: 31 impactos en este partido. Umbral crítico superado. Recomendación inmediata: retirar del juego y aplicar protocolo de conmoción.</div>
+  <div class="alert-actions">
+    <button class="btn-crit" onclick="showModal('Protocolo de Conmoción Cerebral','<strong>Pasos inmediatos:</strong><ul><li>Retirar al jugador del campo — no puede regresar bajo ninguna circunstancia.</li><li>Evaluar: confusión, dolor de cabeza, visión borrosa, náuseas, pérdida de equilibrio.</li><li>Si hay pérdida de conciencia, llamar servicios de emergencia.</li><li>Reposo en área tranquila. Sin medicamentos sin supervisión médica.</li><li>Documentar: hora, magnitud del impacto, síntomas.</li><li>No puede entrenar hasta evaluación neurológica completa.</li></ul>')">Aplicar protocolo ↗</button>
+    <button class="btn-ghost" onclick="showModal('¿Cuándo es peligroso?','<strong>Umbrales clínicos IMPKT:</strong><ul><li><strong>Verde — Normal:</strong> menos de 4g y 200°/s.</li><li><strong>Amarillo — Alerta:</strong> 4–8g o 200–400°/s. Monitoreo intensivo.</li><li><strong>Rojo — Crítico:</strong> más de 8g o 400°/s. Retirar inmediatamente.</li><li><strong>Acumulación:</strong> más de 25–30 impactos por partido incrementa el riesgo independientemente de la magnitud individual.</li></ul><br><em>Fuente: Rowson & Duma (2013), Annals of Biomedical Engineering.</em>')">¿Cuándo es peligroso? ↗</button>
+  </div>
+</div>
+
+<div class="grid-main">
+  <div class="card">
+    <div class="card-title">jugadores · acumulación de impacto</div>
+    <div id="player-list"></div>
+    <div class="thresh-row">
+      <div class="thresh"><div class="dot dot-g"></div>normal &lt;4g</div>
+      <div class="thresh"><div class="dot dot-y"></div>alerta 4–8g</div>
+      <div class="thresh"><div class="dot dot-r"></div>crítico &gt;8g</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="card">
+      <div class="card-title">impactos por cuarto</div>
+      <div class="chart-bar-container">
+        <div class="chart-row"><div class="chart-label">Q1</div><div class="chart-track"><div class="chart-fill" style="width:80%;background:#00C896;color:#04342C">64</div></div><div class="chart-val">64</div></div>
+        <div class="chart-row"><div class="chart-label">Q2</div><div class="chart-track"><div class="chart-fill" style="width:95%;background:#F5A800;color:#412402">76</div></div><div class="chart-val">76</div></div>
+        <div class="chart-row"><div class="chart-label">Q3 (actual)</div><div class="chart-track"><div class="chart-fill" style="width:55%;background:#D91E18;color:#500A0A" id="q3-bar">44</div></div><div class="chart-val" id="q3-val">44</div></div>
+        <div class="chart-row"><div class="chart-label">Q4</div><div class="chart-track"><div class="chart-fill" style="width:0%;background:#2C2C2A"></div></div><div class="chart-val" style="color:#333">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">promedio por posición</div>
+      <div class="position-grid">
+        <div class="pos-card" onclick="showModal('OL — Línea Ofensiva','<strong>Promedio: 28 impactos</strong><br><br>Mayor acumulación por contacto directo en cada jugada. Magnitudes individuales moderadas pero frecuencia alta — el mayor riesgo de CTE a largo plazo.')"><div class="pos-name">OL</div><div class="pos-avg" style="color:#F5A800">28</div></div>
+        <div class="pos-card" onclick="showModal('LB — Linebacker','<strong>Promedio: 31 impactos · CRÍTICO</strong><br><br>Mayor riesgo en este partido. Alta frecuencia combinada con magnitudes elevadas por tacleo directo. El jugador #72 Mendoza ya superó el umbral crítico.')"><div class="pos-name">LB</div><div class="pos-avg" style="color:#D91E18">31</div></div>
+        <div class="pos-card" onclick="showModal('QB — Quarterback','<strong>Promedio: 24 impactos</strong><br><br>Impactos de alta magnitud pero menor frecuencia. El jugador #18 Torres está en nivel de alerta — monitorear de cerca en Q4.')"><div class="pos-name">QB</div><div class="pos-avg" style="color:#F5A800">24</div></div>
+        <div class="pos-card" onclick="showModal('WR / CB','<strong>Promedio: 13 impactos</strong><br><br>Menor acumulación del equipo. Impactos de alta velocidad pero baja frecuencia. Todos dentro de rango normal.')"><div class="pos-name">WR/CB</div><div class="pos-avg" style="color:#00C896">13</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-bottom">
+  <div class="card">
+    <div class="card-title">registro de eventos · partido actual</div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">acciones rápidas</div>
+    <button class="action-btn" style="background:#04342C;border-color:#00C896;color:#00C896" onclick="showModal('Reporte Médico del Partido','<strong>IMPKT — Reporte Q3 · Partido vs Pumas UP</strong><ul><li>Impactos totales Q1–Q3: 247</li><li>Jugadores en alerta: #18 Torres (QB), #55 Ramírez (OL)</li><li>Jugador crítico: #72 Mendoza (LB) — retirado</li><li>Pico máximo: 9.4g · 412°/s</li><li>Posición de mayor riesgo: LB (31 promedio)</li></ul><strong>Recomendaciones:</strong><ul><li>#72 Mendoza: evaluación neurológica obligatoria.</li><li>#18 Torres y #55 Ramírez: sustitución preventiva si supera 6g en Q4.</li></ul>')">📋 Reporte médico del partido</button>
+    <button class="action-btn" style="background:#0a0a09;border-color:#2C2C2A;color:#888780" onclick="showModal('Historial Temporada — #72 R. Mendoza','<strong>Linebacker · #72 · Roberto Mendoza</strong><ul><li>Semana 1 vs ITESM: 18 imp · pico 4.2g</li><li>Semana 2 vs Tec GDL: 22 imp · pico 5.8g</li><li>Semana 3 vs Anáhuac: 26 imp · pico 6.1g</li><li>Semana 4 (hoy) vs Pumas: 31 imp · pico 9.4g ⚠️</li></ul><strong>Tendencia:</strong> acumulación progresiva. Evaluación neurológica completa antes del próximo partido.')">📊 Historial temporada — #72 Mendoza</button>
+    <button class="action-btn" style="background:#0a0a09;border-color:#2C2C2A;color:#888780" onclick="showModal('Jugadores en Riesgo','<ul><li><strong>#72 Mendoza (LB):</strong> tendencia creciente 4 semanas. Riesgo alto.</li><li><strong>#55 Ramírez (OL):</strong> acumulación consistente por posición. Monitoreo preventivo.</li><li><strong>#18 Torres (QB):</strong> en alerta este partido. Historial previo normal.</li></ul>')">⚠️ Jugadores en riesgo</button>
+    <button class="action-btn" style="background:#0a0a09;border-color:#2C2C2A;color:#888780" onclick="showModal('Protocolo Completo de Conmoción','<strong>5 fases:</strong><ul><li><strong>Detección:</strong> IMPKT alerta roja → retirar atleta.</li><li><strong>Evaluación en campo:</strong> orientación, memoria, equilibrio, visión.</li><li><strong>Reposo completo:</strong> sin actividad física ni mental.</li><li><strong>Retorno gradual:</strong> aeróbico leve → entrenamiento específico → contacto limitado → partido.</li><li><strong>Alta médica:</strong> solo médico certificado autoriza el regreso.</li></ul>')">🏥 Protocolo de conmoción</button>
+    <button class="action-btn" style="background:#412402;border-color:#F5A800;color:#F5A800" onclick="showModal('Sustituciones · Entrenador','<strong>Recomendaciones para Q4:</strong><ul><li><strong>Sustituir ya:</strong> #72 Mendoza — estado crítico.</li><li><strong>Sustituir si es posible:</strong> #55 Ramírez — acumulación alta.</li><li><strong>Monitorear:</strong> #18 Torres — en alerta.</li><li><strong>Mayor disponibilidad:</strong> #88 Sánchez y #11 Castro — menor carga, ideales para Q4.</li></ul>')">🏈 Sustituciones · entrenador</button>
+  </div>
+</div>
+
+<div class="footer">IMPKT · Sensor de impacto craneal para futbol americano · Isabella Sahagún · UP Guadalajara 2026</div>
+
+<script>
+const players=[
+  {num:'72',name:'R. Mendoza',pos:'LB',impacts:31,max:9.4,status:'crit',info:'<strong>Linebacker · #72</strong><br>Impacto crítico de 9.4g · 412°/s en Q3. 31 impactos acumulados — máximo del equipo. <strong>Retirado del juego.</strong> Evaluación neurológica obligatoria antes del próximo entrenamiento.'},
+  {num:'18',name:'D. Torres',pos:'QB',impacts:24,max:6.8,status:'warn',info:'<strong>Quarterback · #18</strong><br>24 impactos, pico de 6.8g. En nivel de alerta. Monitorear en Q4 — si supera 8g recomendar sustitución inmediata.'},
+  {num:'55',name:'A. Ramírez',pos:'OL',impacts:28,max:5.9,status:'warn',info:'<strong>Línea Ofensiva · #55</strong><br>28 impactos, pico de 5.9g. Acumulación alta por posición. Candidato a sustitución preventiva en Q4.'},
+  {num:'9',name:'C. Villanueva',pos:'WR',impacts:12,max:3.2,status:'ok',info:'<strong>Wide Receiver · #9</strong><br>12 impactos, pico de 3.2g. Dentro de rangos normales. Sin restricciones.'},
+  {num:'34',name:'M. Gutiérrez',pos:'RB',impacts:19,max:4.1,status:'ok',info:'<strong>Running Back · #34</strong><br>19 impactos, pico de 4.1g. Acumulación normal para la posición. Sin restricciones.'},
+  {num:'88',name:'P. Sánchez',pos:'TE',impacts:8,max:2.8,status:'ok',info:'<strong>Tight End · #88</strong><br>Solo 8 impactos, pico de 2.8g. Alta disponibilidad para Q4.'},
+  {num:'22',name:'L. Herrera',pos:'CB',impacts:14,max:3.6,status:'ok',info:'<strong>Cornerback · #22</strong><br>14 impactos, pico de 3.6g. Dentro de rangos normales.'},
+  {num:'11',name:'F. Castro',pos:'S',impacts:10,max:2.1,status:'ok',info:'<strong>Safety · #11</strong><br>10 impactos, pico de 2.1g. Menor acumulación del equipo. Alta disponibilidad para Q4.'},
+];
+const maxI=35;
+function bc(s){return s==='crit'?'#D91E18':s==='warn'?'#F5A800':'#00C896'}
+function tag(s){
+  if(s==='crit')return'<span class="p-tag t-c">crítico</span>';
+  if(s==='warn')return'<span class="p-tag t-w">alerta</span>';
+  return'<span class="p-tag t-ok">normal</span>';
+}
+const list=document.getElementById('player-list');
+players.forEach(p=>{
+  const pct=Math.min(100,Math.round((p.impacts/maxI)*100));
+  const cls='player-row'+(p.status==='crit'?' crit':p.status==='warn'?' warn':'');
+  const dotCls=p.status==='crit'?'dot dot-r':p.status==='warn'?'dot dot-y':'dot dot-g';
+  const gColor=p.max>=8?'#D91E18':p.max>=4?'#F5A800':'#00C896';
+  const d=document.createElement('div');
+  d.className=cls;
+  d.innerHTML='<div class="'+dotCls+'"></div><span class="p-num">#'+p.num+'</span><span class="p-name">'+p.name+'</span><span class="p-pos">'+p.pos+'</span><div class="bar-t"><div class="bar-f" style="width:'+pct+'%;background:'+bc(p.status)+'"></div></div><span class="p-imp">'+p.impacts+' imp.</span><span class="p-g" style="color:'+gColor+'">'+p.max+'g</span>'+tag(p.status);
+  d.onclick=()=>showModal('#'+p.num+' '+p.name+' · '+p.pos, p.info);
+  list.appendChild(d);
+});
+const events=[
+  {t:'08:22',text:'#72 Mendoza — impacto crítico 9.4g · 412°/s. Alerta enviada.',type:'crit'},
+  {t:'07:41',text:'#18 Torres — acumulación supera umbral alerta. 24 impactos.',type:'warn'},
+  {t:'06:58',text:'#55 Ramírez — impacto 5.9g detectado. Nivel alerta.',type:'warn'},
+  {t:'05:30',text:'#34 Gutiérrez — impacto 4.1g. Dentro de rango normal.',type:''},
+  {t:'04:12',text:'#72 Mendoza — impacto 6.2g. Acumulación progresando.',type:'warn'},
+  {t:'02:45',text:'#9 Villanueva — impacto 3.2g. Normal.',type:''},
+  {t:'01:20',text:'Inicio Q3. Todos los sensores activos.',type:''},
+];
+const tl=document.getElementById('timeline');
+events.forEach(e=>{
+  const d=document.createElement('div');
+  d.className='tl-item'+(e.type?' '+e.type:'');
+  d.innerHTML='<span class="tl-time">'+e.t+'</span><span class="tl-text">'+e.text+'</span>';
+  tl.appendChild(d);
+});
+function showModal(title,body){
+  document.getElementById('modal-title').innerHTML=title;
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal').classList.add('active');
+}
+function closeModal(e){
+  if(e.target===document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('active');
+}
+let total=247,ago=31,secs=0;
+setInterval(()=>{
+  secs++;
+  if(secs%4===0&&Math.random()>.5){total++;document.getElementById('total-imp').textContent=total;}
+  ago++;document.getElementById('ago').textContent=ago;
+  document.getElementById('latency').textContent=(Math.random()*.8+0.8).toFixed(1);
+  const mins=Math.floor((secs+22*60)/60).toString().padStart(2,'0');
+  const s=(secs%60).toString().padStart(2,'0');
+  document.getElementById('timer').textContent=mins+':'+s;
+},1000);
+</script>
+</body>
+</html>
